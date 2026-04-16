@@ -2,11 +2,16 @@ import { motion } from 'framer-motion'
 import SubmitFormCard from './components/SubmitFormCard'
 import AboutCard from './components/AboutCard'
 import GlowBackground from './components/GlowBackground'
+import BackendHealthIndicator from './components/BackendHealthIndicator'
 
 function App() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-black via-indigo-950 to-black px-4 py-12 text-white md:py-16">
       <GlowBackground />
+
+      <div className="relative z-10 mx-auto mb-6 flex w-full max-w-[440px] justify-end">
+        <BackendHealthIndicator />
+      </div>
 
       <section className="relative mx-auto flex w-full max-w-[440px] flex-col items-center justify-center gap-14">
         <motion.div

@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const HEALTH_ENDPOINT = import.meta.env.VITE_HEALTH_ENDPOINT || '/health'
 
 function formatFastApiValidationErrors(detail) {
   if (!Array.isArray(detail)) {
@@ -94,6 +95,10 @@ export function getCancelUrl(jobId) {
   } catch {
     return path
   }
+}
+
+export function checkBackendHealth() {
+  return client.get(HEALTH_ENDPOINT, { timeout: 5000 }).then((response) => response.data)
 }
 
 export default client

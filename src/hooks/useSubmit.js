@@ -18,7 +18,7 @@ const statusLabels = {
 
 function readStoredForm() {
   try {
-    const raw = localStorage.getItem(STORAGE_FORM_KEY)
+    const raw = sessionStorage.getItem(STORAGE_FORM_KEY)
     if (!raw) {
       return { email: '', token: '' }
     }
@@ -34,18 +34,18 @@ function readStoredForm() {
 }
 
 function clearStoredJob() {
-  localStorage.removeItem(STORAGE_JOB_ID_KEY)
+  sessionStorage.removeItem(STORAGE_JOB_ID_KEY)
 }
 
 function storeForm(formData) {
-  localStorage.setItem(STORAGE_FORM_KEY, JSON.stringify(formData))
+  sessionStorage.setItem(STORAGE_FORM_KEY, JSON.stringify(formData))
 }
 
 export default function useSubmit() {
   const [formData, setFormData] = useState(readStoredForm)
   const [isLoading, setIsLoading] = useState(false)
   const [feedback, setFeedback] = useState(null)
-  const [jobId, setJobId] = useState(() => localStorage.getItem(STORAGE_JOB_ID_KEY))
+  const [jobId, setJobId] = useState(() => sessionStorage.getItem(STORAGE_JOB_ID_KEY))
   const [jobStatus, setJobStatus] = useState('idle')
   const pollTimerRef = useRef(null)
 
@@ -141,7 +141,7 @@ export default function useSubmit() {
   }, [formData])
 
   useEffect(() => {
-    const activeJobId = localStorage.getItem(STORAGE_JOB_ID_KEY)
+    const activeJobId = sessionStorage.getItem(STORAGE_JOB_ID_KEY)
     if (!activeJobId) {
       return undefined
     }
@@ -218,7 +218,7 @@ export default function useSubmit() {
         throw new Error('Backend did not return a job ID.')
       }
 
-      localStorage.setItem(STORAGE_JOB_ID_KEY, newJobId)
+      sessionStorage.setItem(STORAGE_JOB_ID_KEY, newJobId)
       setJobId(newJobId)
       setFeedback(null)
       schedulePoll(newJobId, true)
