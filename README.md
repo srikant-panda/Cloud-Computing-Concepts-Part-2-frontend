@@ -1,16 +1,75 @@
-# React + Vite
+# Cloud Computing Concepts Part 2 - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for submitting learner details to a backend job runner, tracking submission progress, and handling cancellation.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19
+- Vite 8
+- Tailwind CSS 4
+- Framer Motion
+- Axios
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Submit form with email and token
+- Async job tracking via polling
+- Cancel active job from UI
+- Auto-resume active job status after page reload
+- Friendly API error messages (network, timeout, validation)
+- Automatic cancel beacon on page exit while a job is active
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment
+
+Create a `.env` file in this folder:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+If `VITE_API_BASE_URL` is empty, requests are sent to the same origin.
+
+### 3. Run development server
+
+```bash
+npm run dev
+```
+
+## Available Scripts
+
+- `npm run dev`: start local dev server
+- `npm run build`: create production build
+- `npm run preview`: preview production build locally
+- `npm run lint`: run ESLint
+
+## API Contract
+
+The app expects these backend endpoints:
+
+- `POST /submit`
+	- Request body: `{ "email": string, "token": string }`
+	- Response: `{ "job_id": string }`
+- `GET /status/:jobId`
+	- Response shape includes `status` and optional `result`
+	- Expected statuses: `running`, `grading`, `submitting`, `done`, `failed`, `killed`
+- `POST /cancel/:jobId`
+	- Cancels an active job
+
+## State Persistence
+
+- Form values are saved in localStorage
+- Active `job_id` is saved and reused on reload
+- Polling interval is 2 seconds
+
+## Notes
+
+- Request timeout is 5 minutes
+- Leaving the page during an active submission triggers a cancel beacon
