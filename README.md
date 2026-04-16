@@ -50,6 +50,26 @@ npm run dev
 - `npm run preview`: preview production build locally
 - `npm run lint`: run ESLint
 
+## Deploy To Vercel
+
+This project is configured for Vercel with [vercel.json](vercel.json):
+
+- Build command: `npm run build`
+- Output directory: `dist`
+- Framework: `vite`
+- SPA rewrite: all routes -> `index.html`
+
+### Steps
+
+1. Push this repository to GitHub (already done).
+2. In Vercel, click **Add New... > Project** and import the repository.
+3. Set the root directory to `frontend`.
+4. Add environment variable:
+	- `VITE_API_BASE_URL` = your backend base URL (for example, `https://api.example.com`)
+5. Deploy.
+
+After deployment, Vercel will rebuild automatically on new pushes to your default branch.
+
 ## API Contract
 
 The app expects these backend endpoints:
