@@ -6,6 +6,8 @@ const alertStyles = {
 }
 
 export default function FeedbackAlert({ feedback }) {
+  const isTokenErrorHelp = feedback?.type === 'error' && feedback?.isTokenError
+
   return (
     <AnimatePresence mode="wait">
       {feedback ? (
@@ -21,7 +23,45 @@ export default function FeedbackAlert({ feedback }) {
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className={`rounded-xl px-4 py-3 text-sm font-medium ${alertStyles[feedback.type]}`}
         >
-          {feedback.message}
+          {isTokenErrorHelp ? (
+            <div className="space-y-4">
+              <div>
+                <p className="font-semibold">{feedback.message}</p>
+                <p className="mt-2 text-rose-100/90">Your token may be invalid or expired.</p>
+                <p className="text-rose-100/90">Please check eligibility and regenerate token.</p>
+              </div>
+
+              <div className="space-y-4 rounded-xl border border-rose-200/25 bg-black/20 p-3">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-100/85">
+                    Check Eligibility
+                  </p>
+                  <video
+                    controls
+                    className="w-full rounded-lg border border-white/10 bg-black/40"
+                    src="/eligibility.mp4"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-100/85">
+                    How to Generate Token
+                  </p>
+                  <video
+                    controls
+                    className="w-full rounded-lg border border-white/10 bg-black/40"
+                    src="/get_token.mp4"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </div>
+          ) : (
+            feedback.message
+          )}
         </motion.div>
       ) : null}
     </AnimatePresence>

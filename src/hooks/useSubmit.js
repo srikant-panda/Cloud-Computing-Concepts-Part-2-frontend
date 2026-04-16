@@ -94,6 +94,9 @@ export default function useSubmit() {
       }
 
       if (status === 'failed') {
+        const error = result?.error || ''
+        const isTokenError = /token/i.test(error)
+
         stopPolling()
         clearStoredJob()
         setJobId(null)
@@ -101,7 +104,8 @@ export default function useSubmit() {
         setIsLoading(false)
         setFeedback({
           type: 'error',
-          message: result?.error || 'Submission failed. Please try again.',
+          message: error || 'Submission failed. Please try again.',
+          isTokenError,
         })
         return
       }
