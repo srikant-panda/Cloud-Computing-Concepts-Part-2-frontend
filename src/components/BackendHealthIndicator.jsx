@@ -3,10 +3,16 @@ import { checkBackendHealth } from '../api/client'
 
 const POLL_INTERVAL_MS = 3000
 
-export default function BackendHealthIndicator({ semester = 'SEM-4' }) {
+export default function BackendHealthIndicator({ semester }) {
   const [status, setStatus] = useState('checking')
+  const isValidSemester = semester === 'SEM-3' || semester === 'SEM-4'
 
   useEffect(() => {
+    if (!isValidSemester) {
+      setStatus('checking')
+      return undefined
+    }
+
     let isMounted = true
     setStatus('checking')
 
@@ -30,10 +36,10 @@ export default function BackendHealthIndicator({ semester = 'SEM-4' }) {
       isMounted = false
       window.clearInterval(intervalId)
     }
-  }, [semester])
+  }, [semester, isValidSemester])
 
   const indicator = useMemo(() => {
-    const suffix = semester === 'SEM-3' || semester === 'SEM-4' ? ` (${semester})` : ''
+    const suffix = isValidSemester ? ` (${semester})` : ''
 
     if (status === 'up') {
       return {
@@ -53,7 +59,7 @@ export default function BackendHealthIndicator({ semester = 'SEM-4' }) {
       dotClass: 'bg-amber-300 animate-pulse',
       label: `Checking backend${suffix}...`,
     }
-  }, [status, semester])
+  }, [status, semester, isValidSemester])
 
   return (
     <div className="rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs font-semibold tracking-wide text-slate-100 backdrop-blur-sm">
