@@ -1,7 +1,17 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE_URL_1 = import.meta.env.VITE_API_BASE_URL_1 || ''
+const API_BASE_URL_2 = import.meta.env.VITE_API_BASE_URL_2 || ''
 const HEALTH_ENDPOINT = import.meta.env.VITE_HEALTH_ENDPOINT || '/health'
+
+function resolveApiBaseUrl(semester = 'SEM-4') {
+  if (semester === 'SEM-3') {
+    return API_BASE_URL_1 || API_BASE_URL_2 || API_BASE_URL
+  }
+
+  return API_BASE_URL_2 || API_BASE_URL_1 || API_BASE_URL
+}
 
 function formatFastApiValidationErrors(detail) {
   if (!Array.isArray(detail)) {
@@ -46,7 +56,8 @@ function normalizeError(error) {
       detail,
       path,
       method,
-      message: 'Cannot reach backend service. Verify that the API server is running and VITE_API_BASE_URL is correct.',
+      message:
+        'Cannot reach backend service. Verify that the API server is running and VITE_API_BASE_URL_1 / VITE_API_BASE_URL_2 are correct.',
       raw: error,
     }
   }
@@ -70,47 +81,85 @@ function normalizeError(error) {
   }
 }
 
-const client = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 300000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+const clientsByBaseUrl = new Map()
 
-client.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(normalizeError(error)),
-)
+function createClient(baseURL) {
+  const client = axios.create({
+    baseURL,
+    timeout: 300000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
 
-export function submitDetails(payload) {
-  return client.post('/submit', payload).then((response) => response.data)
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => Promise.reject(normalizeError(error)),
+  )
+
+  return client
 }
 
-export function getSubmissionStatus(jobId) {
-  return client.get(`/status/${jobId}`).then((response) => response.data)
+function getClient(semester) {
+  const baseURL = resolveApiBaseUrl(semester)
+
+  if (!clientsByBaseUrl.has(baseURL)) {
+    clientsByBaseUrl.set(baseURL, createClient(baseURL))
+  }
+
+  return clientsByBaseUrl.get(baseURL)
 }
 
-export function cancelSubmission(jobId) {
-  return client.post(`/cancel/${jobId}`).then((response) => response.data)
+export function submitDetails(payload, semester) {
+  return getClient(semester)
+    .post('/submit', payload)
+    .then((response) => response.data)
 }
 
-export function getCancelUrl(jobId) {
+export function getSubmissionStatus(jobId, semester) {
+  return getClient(semester)
+    .get(`/status/${jobId}`)
+    .then((response) => response.data)
+}
+
+export function cancelSubmission(jobId, semester) {
+  return getClient(semester)
+    .post(`/cancel/${jobId}`)
+    .then((response) => response.data)
+}
+
+export function getCancelUrl(jobId, semester) {
   const path = `/cancel/${jobId}`
+  const apiBaseUrl = resolveApiBaseUrl(semester)
 
-  if (!API_BASE_URL) {
+  if (!apiBaseUrl) {
     return path
   }
 
   try {
-    return new URL(path, API_BASE_URL).toString()
+    return new URL(path, apiBaseUrl).toString()
   } catch {
     return path
   }
 }
 
-export function checkBackendHealth() {
-  return client.get(HEALTH_ENDPOINT, { timeout: 5000 }).then((response) => response.data)
+export function checkBackendHealth(semester) {
+  return getClient(semester)
+    .get(HEALTH_ENDPOINT, {
+      timeout: 5000,
+      // Any non-5xx HTTP response means server is reachable, even if /health is not defined.
+      validateStatus: () => true,
+    })
+    .then((response) => {
+      if (response.status < 500) {
+        return { reachable: true, status: response.status }
+      }
+
+      throw {
+        status: response.status,
+        message: `Health endpoint returned ${response.status}`,
+      }
+    })
 }
 
-export default client
+export default getClient('SEM-4')

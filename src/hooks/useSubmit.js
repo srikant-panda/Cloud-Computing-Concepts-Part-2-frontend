@@ -7,6 +7,7 @@ import {
 } from '../api/client'
 
 const STORAGE_JOB_ID_KEY = 'submit_job_id'
+const STORAGE_JOB_SEMESTER_KEY = 'submit_job_semester'
 const STORAGE_FORM_KEY = 'submit_form_data'
 const POLL_INTERVAL_MS = 2000
 const POLL_TRANSIENT_RETRY_LIMIT = 3
@@ -17,25 +18,47 @@ const statusLabels = {
   submitting: 'Submitting...',
 }
 
+function isReloadNavigation() {
+  try {
+    const navigationEntry = performance.getEntriesByType('navigation')?.[0]
+    return navigationEntry?.type === 'reload'
+  } catch {
+    return false
+  }
+}
+
+function clearStoredSession() {
+  sessionStorage.removeItem(STORAGE_FORM_KEY)
+  sessionStorage.removeItem(STORAGE_JOB_ID_KEY)
+  sessionStorage.removeItem(STORAGE_JOB_SEMESTER_KEY)
+}
+
 function readStoredForm() {
   try {
+    if (isReloadNavigation()) {
+      clearStoredSession()
+      return { email: '', token: '', semester: '' }
+    }
+
     const raw = sessionStorage.getItem(STORAGE_FORM_KEY)
     if (!raw) {
-      return { email: '', token: '' }
+      return { email: '', token: '', semester: '' }
     }
 
     const parsed = JSON.parse(raw)
     return {
       email: parsed?.email || '',
       token: parsed?.token || '',
+      semester: '',
     }
   } catch {
-    return { email: '', token: '' }
+    return { email: '', token: '', semester: '' }
   }
 }
 
 function clearStoredJob() {
   sessionStorage.removeItem(STORAGE_JOB_ID_KEY)
+  sessionStorage.removeItem(STORAGE_JOB_SEMESTER_KEY)
 }
 
 function storeForm(formData) {
@@ -47,6 +70,7 @@ export default function useSubmit() {
   const [isLoading, setIsLoading] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [jobId, setJobId] = useState(() => sessionStorage.getItem(STORAGE_JOB_ID_KEY))
+  const [jobSemester, setJobSemester] = useState(() => sessionStorage.getItem(STORAGE_JOB_SEMESTER_KEY))
   const [jobStatus, setJobStatus] = useState('idle')
   const pollTimerRef = useRef(null)
   const pollRetryCountRef = useRef(0)
@@ -133,7 +157,8 @@ export default function useSubmit() {
     }
 
     try {
-      const statusData = await getSubmissionStatus(currentJobId)
+      const activeSemester = jobSemester || formData.semester
+      const statusData = await getSubmissionStatus(currentJobId, activeSemester)
       const status = statusData?.status
       const result = statusData?.result
 
@@ -208,6 +233,7 @@ export default function useSubmit() {
       stopPolling()
       clearStoredJob()
       setJobId(null)
+      setJobSemester(null)
       setJobStatus('failed')
       setIsLoading(false)
       setFeedback(buildPollErrorFeedback(error))
@@ -220,11 +246,13 @@ export default function useSubmit() {
 
   useEffect(() => {
     const activeJobId = sessionStorage.getItem(STORAGE_JOB_ID_KEY)
+    const activeSemester = sessionStorage.getItem(STORAGE_JOB_SEMESTER_KEY)
     if (!activeJobId) {
       return undefined
     }
 
     setJobId(activeJobId)
+    setJobSemester(activeSemester || formData.semester)
     setJobStatus('running')
     setIsLoading(true)
     setFeedback(null)
@@ -250,7 +278,7 @@ export default function useSubmit() {
       if (!jobId) {
         return
       }
-      navigator.sendBeacon(getCancelUrl(jobId))
+      navigator.sendBeacon(getCancelUrl(jobId, jobSemester || formData.semester))
     }
 
     window.addEventListener('pagehide', cancelOnExit)
@@ -259,7 +287,7 @@ export default function useSubmit() {
       window.onbeforeunload = null
       window.removeEventListener('pagehide', cancelOnExit)
     }
-  }, [jobId, jobStatus])
+  }, [jobId, jobStatus, jobSemester, formData.semester])
 
   useEffect(() => {
     return () => {
@@ -276,11 +304,12 @@ export default function useSubmit() {
 
     const email = formData.email.trim()
     const token = formData.token.trim()
+    const semester = formData.semester
 
-    if (!email || !token) {
+    if (!email || !token || !semester) {
       setFeedback({
         type: 'error',
-        message: 'Email and token are required.',
+        message: 'Email, semester and token are required.',
       })
       return
     }
@@ -290,7 +319,7 @@ export default function useSubmit() {
     setJobStatus('running')
 
     try {
-      const data = await submitDetails({ email, token })
+      const data = await submitDetails({ email, token }, semester)
       const newJobId = data?.job_id
 
       if (!newJobId) {
@@ -298,7 +327,9 @@ export default function useSubmit() {
       }
 
       sessionStorage.setItem(STORAGE_JOB_ID_KEY, newJobId)
+      sessionStorage.setItem(STORAGE_JOB_SEMESTER_KEY, semester)
       setJobId(newJobId)
+      setJobSemester(semester)
       setFeedback(null)
       pollRetryCountRef.current = 0
       schedulePoll(newJobId, true)
@@ -306,6 +337,7 @@ export default function useSubmit() {
     } catch (error) {
       clearStoredJob()
       setJobId(null)
+      setJobSemester(null)
       setJobStatus('failed')
       setFeedback(buildSubmitErrorFeedback(error))
       setIsLoading(false)
@@ -322,11 +354,12 @@ export default function useSubmit() {
     }
 
     try {
-      await cancelSubmission(jobId)
+      await cancelSubmission(jobId, jobSemester || formData.semester)
       pollRetryCountRef.current = 0
       stopPolling()
       clearStoredJob()
       setJobId(null)
+      setJobSemester(null)
       setJobStatus('killed')
       setIsLoading(false)
       setFeedback({

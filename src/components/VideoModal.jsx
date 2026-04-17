@@ -1,25 +1,69 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 
 export default function VideoModal({ isOpen, onClose, title, src, description, linkUrl }) {
+  const prefersReducedMotion = useReducedMotion()
+  const [isMobile, setIsMobile] = useState(false)
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)')
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches)
+    updateIsMobile()
+
+    mediaQuery.addEventListener('change', updateIsMobile)
+    return () => mediaQuery.removeEventListener('change', updateIsMobile)
+  }, [])
+
+  const useLightweightMotion = prefersReducedMotion || isMobile
+  const overlayAnimation = useMemo(
+    () => ({ initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }),
+    [],
+  )
+  const contentAnimation = useMemo(
+    () =>
+      useLightweightMotion
+        ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+        : {
+            initial: { opacity: 0, y: 18, scale: 0.98 },
+            animate: { opacity: 1, y: 0, scale: 1 },
+            exit: { opacity: 0, y: 18, scale: 0.98 },
+          },
+    [useLightweightMotion],
+  )
+
+  useEffect(() => {
+    if (!isOpen || !videoRef.current || !src) {
+      return
+    }
+
+    // Browsers often require muted autoplay, so we retry programmatically on open.
+    const playPromise = videoRef.current.play()
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {})
+    }
+  }, [isOpen, src])
+
   return (
     <AnimatePresence>
       {isOpen ? (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={overlayAnimation.initial}
+          animate={overlayAnimation.animate}
+          exit={overlayAnimation.exit}
+          transition={{ duration: useLightweightMotion ? 0.16 : 0.22, ease: 'easeOut' }}
           onClick={onClose}
         >
           <motion.div
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="w-full max-w-4xl rounded-2xl border border-white/15 bg-slate-950/95 p-5 shadow-2xl shadow-black/50 md:p-6"
-            initial={{ opacity: 0, y: 18, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 18, scale: 0.98 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="w-full max-w-4xl rounded-2xl border border-white/15 bg-slate-950/95 p-5 shadow-2xl shadow-black/50 will-change-transform md:p-6"
+            initial={contentAnimation.initial}
+            animate={contentAnimation.animate}
+            exit={contentAnimation.exit}
+            transition={{ duration: useLightweightMotion ? 0.16 : 0.25, ease: 'easeOut' }}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex items-start justify-between gap-3">
@@ -37,14 +81,24 @@ export default function VideoModal({ isOpen, onClose, title, src, description, l
               </button>
             </div>
 
-            <video
-              controls
-              autoPlay
-              className="aspect-video w-full rounded-xl border border-white/15 bg-black"
-              src={src}
-            >
-              Your browser does not support the video tag.
-            </video>
+            {src ? (
+              <video
+                ref={videoRef}
+                controls
+                autoPlay
+                muted
+                preload="metadata"
+                playsInline
+                className="aspect-video w-full rounded-xl border border-white/15 bg-black"
+                src={src}
+              >
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <div className="rounded-xl border border-white/15 bg-black/40 px-4 py-6 text-center text-sm text-slate-200/90">
+                No video for this semester. Use the link below.
+              </div>
+            )}
 
             {linkUrl ? (
               <p className="mt-3 text-sm text-slate-200/95">
