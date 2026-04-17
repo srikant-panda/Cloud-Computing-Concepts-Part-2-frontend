@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import SubmitFormCard from './components/SubmitFormCard'
 import AboutCard from './components/AboutCard'
@@ -9,6 +9,26 @@ import VideoModal from './components/VideoModal'
 function App() {
   const [isEligibilityVideoOpen, setEligibilityVideoOpen] = useState(true)
   const [isTokenVideoOpen, setTokenVideoOpen] = useState(false)
+
+  useEffect(() => {
+    const videoSources = ['/eligibility.mp4', '/get_token.mp4']
+
+    const preloadedVideos = videoSources.map((src) => {
+      const video = document.createElement('video')
+      video.preload = 'auto'
+      video.src = src
+      video.load()
+      return video
+    })
+
+    return () => {
+      preloadedVideos.forEach((video) => {
+        video.pause()
+        video.removeAttribute('src')
+        video.load()
+      })
+    }
+  }, [])
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#05151a] via-[#0d2f33] to-[#1b1510] px-4 py-12 text-white md:py-16">

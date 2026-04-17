@@ -61,7 +61,7 @@ export default function SubmitFormCard({ onOpenTokenHelp }) {
           <button
             type="button"
             onClick={onOpenTokenHelp}
-            className="mt-2 text-xs font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
+            className="mt-2 text-sm font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
           >
             How to get token?
           </button>
