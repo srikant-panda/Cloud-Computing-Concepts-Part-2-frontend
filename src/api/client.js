@@ -56,8 +56,7 @@ function normalizeError(error) {
       detail,
       path,
       method,
-      message:
-        'Cannot reach backend service. Verify that the API server is running and VITE_API_BASE_URL_1 / VITE_API_BASE_URL_2 are correct.',
+      message: 'Cannot reach backend service.',
       raw: error,
     }
   }
