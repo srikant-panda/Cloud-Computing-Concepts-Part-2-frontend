@@ -32,10 +32,19 @@ npm install
 Create a `.env` file in this folder:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL_1=http://localhost:8001
+VITE_API_BASE_URL_2=http://localhost:8000
 ```
 
-If `VITE_API_BASE_URL` is empty, requests are sent to the same origin.
+Optional fallbacks are also supported:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL_SEM3=http://localhost:8001
+VITE_API_BASE_URL_SEM4=http://localhost:8000
+```
+
+If all API base URLs are empty, requests are sent to the same origin.
 
 ### 3. Run development server
 
@@ -64,8 +73,10 @@ This project is configured for Vercel with [vercel.json](vercel.json):
 1. Push this repository to GitHub (already done).
 2. In Vercel, click **Add New... > Project** and import the repository.
 3. Set the root directory to `frontend`.
-4. Add environment variable:
-	- `VITE_API_BASE_URL` = your backend base URL (for example, `https://api.example.com`)
+4. Add environment variables:
+	- `VITE_API_BASE_URL_1` = SEM-3 backend URL
+	- `VITE_API_BASE_URL_2` = SEM-4 backend URL
+	- Optional fallback: `VITE_API_BASE_URL`
 5. Deploy.
 
 After deployment, Vercel will rebuild automatically on new pushes to your default branch.

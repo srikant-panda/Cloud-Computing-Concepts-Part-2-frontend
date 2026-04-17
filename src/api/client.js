@@ -1,12 +1,53 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
-const API_BASE_URL_1 = import.meta.env.VITE_API_BASE_URL_1 || ''
-const API_BASE_URL_2 = import.meta.env.VITE_API_BASE_URL_2 || ''
+const API_BASE_URL_1 = import.meta.env.VITE_API_BASE_URL_1 || import.meta.env.VITE_API_BASE_URL_SEM3 || ''
+const API_BASE_URL_2 = import.meta.env.VITE_API_BASE_URL_2 || import.meta.env.VITE_API_BASE_URL_SEM4 || ''
 const HEALTH_ENDPOINT = import.meta.env.VITE_HEALTH_ENDPOINT || '/health'
 
+function normalizeSemester(semester = '') {
+  const normalized = String(semester).trim().toUpperCase().replace(/\s+/g, '-')
+
+  if (normalized === 'SEM3') {
+    return 'SEM-3'
+  }
+
+  if (normalized === 'SEM4') {
+    return 'SEM-4'
+  }
+
+  return normalized
+}
+
+function isUnsafeLocalhostUrl(baseUrl) {
+  if (!baseUrl || typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    const candidate = new URL(baseUrl, window.location.origin)
+    const appHost = window.location.hostname
+    const appIsLocal = appHost === 'localhost' || appHost === '127.0.0.1'
+    const candidateIsLocal = candidate.hostname === 'localhost' || candidate.hostname === '127.0.0.1'
+
+    return !appIsLocal && candidateIsLocal
+  } catch {
+    return false
+  }
+}
+
+function sanitizeBaseUrl(baseUrl) {
+  if (isUnsafeLocalhostUrl(baseUrl)) {
+    return ''
+  }
+
+  return baseUrl
+}
+
 function resolveApiBaseUrl(semester = 'SEM-4') {
-  if (semester === 'SEM-3') {
+  const normalizedSemester = normalizeSemester(semester)
+
+  if (normalizedSemester === 'SEM-3') {
     return API_BASE_URL_1 || API_BASE_URL_2 || API_BASE_URL
   }
 
@@ -100,7 +141,7 @@ function createClient(baseURL) {
 }
 
 function getClient(semester) {
-  const baseURL = resolveApiBaseUrl(semester)
+  const baseURL = sanitizeBaseUrl(resolveApiBaseUrl(semester))
 
   if (!clientsByBaseUrl.has(baseURL)) {
     clientsByBaseUrl.set(baseURL, createClient(baseURL))
