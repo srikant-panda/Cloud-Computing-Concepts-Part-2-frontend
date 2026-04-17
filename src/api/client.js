@@ -21,6 +21,9 @@ function normalizeError(error) {
   const status = error.response?.status ?? null
   const code = error.code ?? null
   const data = error.response?.data
+  const detail = data?.detail
+  const path = error.config?.url ?? null
+  const method = error.config?.method ? String(error.config.method).toUpperCase() : null
   const isTimeout = code === 'ECONNABORTED'
   const isNetworkError = !error.response
 
@@ -28,6 +31,9 @@ function normalizeError(error) {
     return {
       status,
       code,
+      detail,
+      path,
+      method,
       message: 'Request timed out after 5 minutes. Please try again.',
       raw: error,
     }
@@ -37,6 +43,9 @@ function normalizeError(error) {
     return {
       status,
       code,
+      detail,
+      path,
+      method,
       message: 'Cannot reach backend service. Verify that the API server is running and VITE_API_BASE_URL is correct.',
       raw: error,
     }
@@ -53,6 +62,9 @@ function normalizeError(error) {
   return {
     status,
     code,
+    detail,
+    path,
+    method,
     message,
     raw: error,
   }

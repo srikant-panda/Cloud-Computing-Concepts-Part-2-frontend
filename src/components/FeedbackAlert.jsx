@@ -5,7 +5,7 @@ const alertStyles = {
   error: 'border border-rose-300/20 bg-rose-500/15 text-rose-100',
 }
 
-export default function FeedbackAlert({ feedback }) {
+export default function FeedbackAlert({ feedback, onOpenTokenHelp }) {
   const isTokenErrorHelp = feedback?.type === 'error' && feedback?.isTokenError
 
   return (
@@ -31,32 +31,14 @@ export default function FeedbackAlert({ feedback }) {
                 <p className="text-rose-100/90">Please check eligibility and regenerate token.</p>
               </div>
 
-              <div className="space-y-4 rounded-xl border border-rose-200/25 bg-black/20 p-3">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-100/85">
-                    Check Eligibility
-                  </p>
-                  <video
-                    controls
-                    className="w-full rounded-lg border border-white/10 bg-black/40"
-                    src="/eligibility.mp4"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-100/85">
-                    How to Generate Token
-                  </p>
-                  <video
-                    controls
-                    className="w-full rounded-lg border border-white/10 bg-black/40"
-                    src="/get_token.mp4"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
+              <div className="rounded-xl border border-rose-200/25 bg-black/20 p-3">
+                <button
+                  type="button"
+                  onClick={onOpenTokenHelp}
+                  className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300 transition hover:text-cyan-200 hover:underline"
+                >
+                  How to get token?
+                </button>
               </div>
             </div>
           ) : (

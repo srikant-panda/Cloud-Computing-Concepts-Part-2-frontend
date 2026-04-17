@@ -9,7 +9,7 @@ function Spinner() {
   )
 }
 
-export default function SubmitFormCard() {
+export default function SubmitFormCard({ onOpenTokenHelp }) {
   const {
     formData,
     updateField,
@@ -41,7 +41,7 @@ export default function SubmitFormCard() {
             value={formData.email}
             onChange={updateField('email')}
             placeholder="you@example.com"
-            className="w-full rounded-xl border border-white/20 bg-transparent px-4 py-3 text-white placeholder:text-slate-400/80 outline-none transition duration-300 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/25"
+            className="w-full rounded-xl border border-teal-100/20 bg-black/20 px-4 py-3 text-white placeholder:text-slate-300/70 outline-none transition duration-300 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-400/25"
           />
         </label>
 
@@ -55,8 +55,16 @@ export default function SubmitFormCard() {
             value={formData.token}
             onChange={updateField('token')}
             placeholder="Paste your token"
-            className="w-full rounded-xl border border-white/20 bg-transparent px-4 py-3 text-white placeholder:text-slate-400/80 outline-none transition duration-300 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/25"
+            className="w-full rounded-xl border border-teal-100/20 bg-black/20 px-4 py-3 text-white placeholder:text-slate-300/70 outline-none transition duration-300 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-400/25"
           />
+
+          <button
+            type="button"
+            onClick={onOpenTokenHelp}
+            className="mt-2 text-xs font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
+          >
+            How to get token?
+          </button>
         </label>
 
         <motion.button
@@ -64,7 +72,7 @@ export default function SubmitFormCard() {
           disabled={isLoading}
           whileHover={{ scale: isLoading ? 1 : 1.03 }}
           whileTap={{ scale: isLoading ? 1 : 0.98 }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 px-4 py-3 font-semibold text-white shadow-lg shadow-indigo-900/40 transition duration-300 hover:shadow-purple-500/30 disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-4 py-3 font-semibold text-white shadow-lg shadow-orange-900/40 transition duration-300 hover:shadow-orange-500/30 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isLoading ? (
             <>
@@ -107,7 +115,7 @@ export default function SubmitFormCard() {
           ) : null}
         </AnimatePresence>
 
-        <FeedbackAlert feedback={feedback} />
+        <FeedbackAlert feedback={feedback} onOpenTokenHelp={onOpenTokenHelp} />
       </form>
     </GlassCard>
   )

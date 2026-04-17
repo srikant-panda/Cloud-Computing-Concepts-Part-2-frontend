@@ -9,6 +9,7 @@ import {
 const STORAGE_JOB_ID_KEY = 'submit_job_id'
 const STORAGE_FORM_KEY = 'submit_form_data'
 const POLL_INTERVAL_MS = 2000
+const POLL_TRANSIENT_RETRY_LIMIT = 3
 
 const statusLabels = {
   running: 'Starting...',
@@ -48,6 +49,65 @@ export default function useSubmit() {
   const [jobId, setJobId] = useState(() => sessionStorage.getItem(STORAGE_JOB_ID_KEY))
   const [jobStatus, setJobStatus] = useState('idle')
   const pollTimerRef = useRef(null)
+  const pollRetryCountRef = useRef(0)
+
+  const isTransientRequestError = (error) => !error?.status || error?.code === 'ECONNABORTED'
+
+  const buildSubmitErrorFeedback = (error) => {
+    if (error?.status === 422) {
+      return {
+        type: 'error',
+        message: error.message || 'Invalid email or token format.',
+      }
+    }
+
+    if (error?.status >= 500) {
+      return {
+        type: 'error',
+        message: 'Backend could not start your submission. Please try again in a moment.',
+      }
+    }
+
+    return {
+      type: 'error',
+      message: error?.message || 'Submission failed. Please try again.',
+    }
+  }
+
+  const buildPollErrorFeedback = (error) => {
+    if (error?.status === 404) {
+      return {
+        type: 'error',
+        message: 'Your previous job was not found on the backend. Please start a new submission.',
+      }
+    }
+
+    if (error?.status >= 500) {
+      return {
+        type: 'error',
+        message: 'Backend error while checking progress. Please retry your submission.',
+      }
+    }
+
+    return {
+      type: 'error',
+      message: error?.message || 'Unable to fetch submission status.',
+    }
+  }
+
+  const buildCancelErrorFeedback = (error) => {
+    if (error?.status === 404) {
+      return {
+        type: 'error',
+        message: 'This job is no longer active on the backend.',
+      }
+    }
+
+    return {
+      type: 'error',
+      message: error?.message || 'Unable to cancel the current submission.',
+    }
+  }
 
   const stopPolling = () => {
     if (pollTimerRef.current) {
@@ -78,6 +138,7 @@ export default function useSubmit() {
       const result = statusData?.result
 
       if (status === 'done') {
+        pollRetryCountRef.current = 0
         stopPolling()
         clearStoredJob()
         setJobId(null)
@@ -94,6 +155,7 @@ export default function useSubmit() {
       }
 
       if (status === 'failed') {
+        pollRetryCountRef.current = 0
         const error = result?.error || ''
         const isTokenError = /token/i.test(error)
 
@@ -111,6 +173,7 @@ export default function useSubmit() {
       }
 
       if (status === 'killed') {
+        pollRetryCountRef.current = 0
         stopPolling()
         clearStoredJob()
         setJobId(null)
@@ -125,14 +188,29 @@ export default function useSubmit() {
 
       setIsLoading(true)
       setJobStatus(status || 'running')
+      pollRetryCountRef.current = 0
       schedulePoll(currentJobId)
     } catch (error) {
+      const isTransient = isTransientRequestError(error)
+
+      if (isTransient && pollRetryCountRef.current < POLL_TRANSIENT_RETRY_LIMIT) {
+        pollRetryCountRef.current += 1
+        setJobStatus('running')
+        setFeedback({
+          type: 'error',
+          message: 'Connection issue while checking progress. Retrying...',
+        })
+        schedulePoll(currentJobId)
+        return
+      }
+
+      pollRetryCountRef.current = 0
       stopPolling()
+      clearStoredJob()
+      setJobId(null)
+      setJobStatus('failed')
       setIsLoading(false)
-      setFeedback({
-        type: 'error',
-        message: error.message || 'Unable to fetch submission status.',
-      })
+      setFeedback(buildPollErrorFeedback(error))
     }
   }
 
@@ -150,6 +228,7 @@ export default function useSubmit() {
     setJobStatus('running')
     setIsLoading(true)
     setFeedback(null)
+    pollRetryCountRef.current = 0
     schedulePoll(activeJobId, true)
 
     return () => {
@@ -221,16 +300,14 @@ export default function useSubmit() {
       sessionStorage.setItem(STORAGE_JOB_ID_KEY, newJobId)
       setJobId(newJobId)
       setFeedback(null)
+      pollRetryCountRef.current = 0
       schedulePoll(newJobId, true)
 
     } catch (error) {
       clearStoredJob()
       setJobId(null)
       setJobStatus('failed')
-      setFeedback({
-        type: 'error',
-        message: error.message || 'Submission failed. Please try again.',
-      })
+      setFeedback(buildSubmitErrorFeedback(error))
       setIsLoading(false)
     }
   }
@@ -246,6 +323,7 @@ export default function useSubmit() {
 
     try {
       await cancelSubmission(jobId)
+      pollRetryCountRef.current = 0
       stopPolling()
       clearStoredJob()
       setJobId(null)
@@ -256,10 +334,7 @@ export default function useSubmit() {
         message: 'Submission cancelled.',
       })
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error.message || 'Unable to cancel the current submission.',
-      })
+      setFeedback(buildCancelErrorFeedback(error))
     }
   }
 
