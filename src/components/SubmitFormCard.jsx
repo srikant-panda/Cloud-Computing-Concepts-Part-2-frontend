@@ -152,11 +152,18 @@ export default function SubmitFormCard({ onOpenTokenHelp, onSemesterChange }) {
   }
 
   const disableInputs = isLoading
+  const tokenHelpLabel =
+    formData.semester === 'SEM-3'
+      ? 'How to get SEM-3 token?'
+      : formData.semester === 'SEM-4'
+        ? 'How to get SEM-4 token?'
+        : 'How to get token?'
 
   return (
     <div className="relative mx-auto w-full max-w-[980px]">
       <div className="mx-auto w-full max-w-[560px]">
-        <GlassCard>
+        <motion.div layout transition={{ duration: 0.28, ease: 'easeInOut' }}>
+          <GlassCard>
           <header className="mb-6 text-left">
             <h1 className="text-3xl font-bold tracking-tight text-white">Enter your details</h1>
             <p className="text-muted mt-2">
@@ -164,10 +171,8 @@ export default function SubmitFormCard({ onOpenTokenHelp, onSemesterChange }) {
             </p>
           </header>
 
-          <form
-            onSubmit={handleSubmit}
-            className={`space-y-4 transition duration-300 ${disableInputs ? 'opacity-55' : ''}`}
-          >
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className={`space-y-4 transition duration-300 ${disableInputs ? 'opacity-55' : ''}`}>
             <label className="block text-left">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300/75">
                 Email <span className="text-rose-300">*</span>
@@ -266,31 +271,42 @@ export default function SubmitFormCard({ onOpenTokenHelp, onSemesterChange }) {
               </div>
             </label>
 
-            <label className="block text-left">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300/75">
-                Token <span className="text-rose-300">*</span>
-              </span>
-              <input
-                type="text"
-                required
-                disabled={disableInputs}
-                value={formData.token}
-                onChange={updateField('token')}
-                placeholder="Paste your token"
-                className="w-full rounded-xl border border-teal-100/20 bg-black/20 px-4 py-3 text-white placeholder:text-slate-300/70 outline-none transition duration-300 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-400/25"
-              />
-
-              {formData.semester ? (
-                <button
-                  type="button"
-                  onClick={openTokenHelp}
-                  disabled={disableInputs}
-                  className="mt-2 text-sm font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
+            <AnimatePresence initial={false}>
+              {isSemesterSelected ? (
+                <motion.div
+                  key="token-fields"
+                  initial={{ opacity: 0, height: 0, y: -6 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -6 }}
+                  transition={{ duration: 0.24, ease: 'easeOut' }}
+                  className="overflow-hidden"
                 >
-                  How to get token?
-                </button>
+                  <label className="block text-left">
+                    <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300/75">
+                      Token <span className="text-rose-300">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      disabled={disableInputs}
+                      value={formData.token}
+                      onChange={updateField('token')}
+                      placeholder="Paste your token"
+                      className="w-full rounded-xl border border-teal-100/20 bg-black/20 px-4 py-3 text-white placeholder:text-slate-300/70 outline-none transition duration-300 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-400/25"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={openTokenHelp}
+                      disabled={disableInputs}
+                      className="mt-2 text-sm font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
+                    >
+                      {tokenHelpLabel}
+                    </button>
+                  </label>
+                </motion.div>
               ) : null}
-            </label>
+            </AnimatePresence>
 
             <motion.button
               type="submit"
@@ -308,6 +324,7 @@ export default function SubmitFormCard({ onOpenTokenHelp, onSemesterChange }) {
                 'Submit'
               )}
             </motion.button>
+            </div>
 
             <AnimatePresence>
               {isLoading && jobId ? (
@@ -342,7 +359,8 @@ export default function SubmitFormCard({ onOpenTokenHelp, onSemesterChange }) {
 
             <FeedbackAlert feedback={feedback} onOpenTokenHelp={openTokenHelp} />
           </form>
-        </GlassCard>
+          </GlassCard>
+        </motion.div>
       </div>
 
       <AnimatePresence>
